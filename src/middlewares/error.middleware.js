@@ -24,3 +24,6 @@ export default function globalErrorHandler(err, req, res, _next) {
     });
   }
 }
+
+import { AppError } from '@vendorbridge/shared';
+export { AppError };

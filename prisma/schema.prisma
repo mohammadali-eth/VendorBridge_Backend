@@ -18,16 +18,21 @@ enum VendorStatus {
   PENDING
   APPROVED
   REJECTED
+  ACTIVE
+  INACTIVE
+  BLOCKED
 }
 
 enum RfqStatus {
   DRAFT
   PUBLISHED
+  PENDING_APPROVAL
   CLOSED
   CANCELLED
 }
 
 enum QuotationStatus {
+  DRAFT
   SUBMITTED
   UNDER_REVIEW
   ACCEPTED
@@ -43,66 +48,100 @@ enum PoStatus {
 }
 
 model User {
-  id        String          @id @default(auto()) @map("_id") @db.ObjectId
-  email     String          @unique
-  password  String
-  name      String
-  role      Role            @default(SUPPLIER)
-  vendorId  String?         @db.ObjectId
-  vendor    Vendor?         @relation(fields: [vendorId], references: [id], onDelete: SetNull)
-  rfqs      Rfq[]           @relation("ProcurementRfqs")
-  pos       PurchaseOrder[] @relation("ProcurementPos")
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  id               String            @id @default(auto()) @map("_id") @db.ObjectId
+  email            String            @unique
+  password         String
+  name             String
+  role             Role              @default(SUPPLIER)
+  status           String            @default("ACTIVE")
+  vendorId         String?           @db.ObjectId
+  vendor           Vendor?           @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  rfqs             Rfq[]             @relation("ProcurementRfqs")
+  pos              PurchaseOrder[]   @relation("ProcurementPos")
+  vendorSelections VendorSelection[]
+  notifications    Notification[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@map("users")
 }
 
 model Vendor {
-  id                 String          @id @default(auto()) @map("_id") @db.ObjectId
+  id                 String            @id @default(auto()) @map("_id") @db.ObjectId
   name               String
-  email              String          @unique
+  email              String            @unique
   phone              String
   address            String
-  registrationNumber String          @unique
-  status             VendorStatus    @default(PENDING)
+  registrationNumber String            @unique
+  status             VendorStatus      @default(PENDING)
+  code               String?
+  category           String?
+  type               String?
+  gstNumber          String?
+  panNumber          String?
+  taxDetails         String?
+  contactPerson      String?
+  designation        String?
+  alternatePhone     String?
+  addressLine1       String?
+  addressLine2       String?
+  city               String?
+  state              String?
+  country            String?
+  pincode            String?
   users              User[]
   quotations         Quotation[]
   pos                PurchaseOrder[]
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
+  vendorSelections   VendorSelection[]
+  invoices           Invoice[]
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
 
   @@map("vendors")
 }
 
 model Rfq {
-  id          String      @id @default(auto()) @map("_id") @db.ObjectId
-  title       String
-  description String
-  deadline    DateTime
-  status      RfqStatus   @default(DRAFT)
-  createdById String      @db.ObjectId
-  createdBy   User        @relation("ProcurementRfqs", fields: [createdById], references: [id], onDelete: Restrict)
-  quotations  Quotation[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id                String            @id @default(auto()) @map("_id") @db.ObjectId
+  title             String
+  description       String
+  category          String            @default("Product")
+  priority          String            @default("Medium")
+  startDate         DateTime          @default(now())
+  deadline          DateTime
+  items             Json              @default("[]")
+  attachments       Json              @default("[]")
+  assignedVendorIds String[]          @default([])
+  status            RfqStatus         @default(DRAFT)
+  createdById       String            @db.ObjectId
+  createdBy         User              @relation("ProcurementRfqs", fields: [createdById], references: [id], onDelete: Restrict)
+  quotations        Quotation[]
+  vendorSelections  VendorSelection[]
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
 
   @@map("rfqs")
 }
 
 model Quotation {
-  id               String          @id @default(auto()) @map("_id") @db.ObjectId
-  rfqId            String          @db.ObjectId
-  rfq              Rfq             @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  vendorId         String          @db.ObjectId
-  vendor           Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  id               String            @id @default(auto()) @map("_id") @db.ObjectId
+  rfqId            String            @db.ObjectId
+  rfq              Rfq               @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendorId         String            @db.ObjectId
+  vendor           Vendor            @relation(fields: [vendorId], references: [id], onDelete: Cascade)
   price            Float
-  deliveryTimeline String
+  deliveryTimeline String            @default("")
   comments         String?
-  status           QuotationStatus @default(SUBMITTED)
+  items            Json              @default("[]")
+  deliveryDays     Int               @default(0)
+  gstPercent       Float             @default(0.00)
+  otherTaxPercent  Float             @default(0.00)
+  subtotal         Float             @default(0.00)
+  grandTotal       Float             @default(0.00)
+  status           QuotationStatus   @default(SUBMITTED)
   pos              PurchaseOrder[]
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  vendorSelections VendorSelection[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
 
   @@map("quotations")
 }
@@ -118,8 +157,104 @@ model PurchaseOrder {
   buyer       User      @relation("ProcurementPos", fields: [buyerId], references: [id], onDelete: Restrict)
   totalAmount Float
   status      PoStatus  @default(DRAFT)
+  invoices    Invoice[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   @@map("purchase_orders")
+}
+
+model VendorSelection {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  rfqId        String    @db.ObjectId
+  rfq          Rfq       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendorId     String    @db.ObjectId
+  vendor       Vendor    @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  quotationId  String    @db.ObjectId
+  quotation    Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  selectedById String    @db.ObjectId
+  selectedBy   User      @relation(fields: [selectedById], references: [id], onDelete: Restrict)
+  status       String    @default("PENDING")
+  currentLevel Int       @default(1)
+  remarks      String?
+  internalNotes String?
+  history      Json      @default("[]")
+  timeline     Json      @default("[]")
+  auditLogs    Json      @default("[]")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("vendor_selections")
+}
+
+enum InvoiceStatus {
+  DRAFT
+  GENERATED
+  SENT
+  PENDING_PAYMENT
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+model Invoice {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  invoiceNumber   String        @unique
+  invoiceDate     DateTime      @default(now())
+  dueDate         DateTime
+  paymentTerms    String
+  status          InvoiceStatus @default(DRAFT)
+  purchaseOrderId String        @db.ObjectId
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  vendorId        String        @db.ObjectId
+  vendor          Vendor        @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  totalAmount     Float
+  taxAmount       Float
+  subtotal        Float
+  remarks         String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  @@map("invoices")
+}
+
+model Notification {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String
+  read        Boolean  @default(false)
+  userId      String?  @db.ObjectId
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  logId     String   @unique
+  user      String
+  module    String
+  action    String
+  entity    String
+  status    String   @default("Success")
+  ipAddress String   @default("192.168.1.10")
+  createdAt DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model Report {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  generatedBy String
+  createdAt   DateTime @default(now())
+  format      String
+  status      String   @default("COMPLETED")
+  url         String?
+  filters     Json     @default("{}")
+
+  @@map("reports")
 }
