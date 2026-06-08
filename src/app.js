@@ -5,7 +5,7 @@ import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import compression from 'compression';
-import { AppError } from '@vendorbridge/shared';
+import { AppError } from './utils/appError.js';
 import globalErrorHandler from './middlewares/error.middleware.js';
 
 import authRouter from './modules/auth/auth.routes.js';

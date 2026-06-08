@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { AppError } from '@vendorbridge/shared';
+import { AppError } from '../../utils/appError.js';
 import prisma from '../../config/db.js';
 
 // Helper to generate tokens

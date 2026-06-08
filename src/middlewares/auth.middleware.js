@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { AppError } from '@vendorbridge/shared';
+import { AppError } from '../utils/appError.js';
 import prisma from '../config/db.js';
 
 export async function protect(req, res, next) {
