@@ -1,0 +1,125 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  BUYER
+  SUPPLIER
+  PROCUREMENT_MANAGER
+}
+
+enum VendorStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RfqStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  CANCELLED
+}
+
+enum QuotationStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum PoStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id        String          @id @default(uuid()) @db.Uuid
+  email     String          @unique
+  password  String
+  name      String
+  role      Role            @default(SUPPLIER)
+  vendorId  String?         @db.Uuid
+  vendor    Vendor?         @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  rfqs      Rfq[]           @relation("ProcurementRfqs")
+  pos       PurchaseOrder[] @relation("ProcurementPos")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@map("users")
+}
+
+model Vendor {
+  id                 String          @id @default(uuid()) @db.Uuid
+  name               String
+  email              String          @unique
+  phone              String
+  address            String
+  registrationNumber String          @unique
+  status             VendorStatus    @default(PENDING)
+  users              User[]
+  quotations         Quotation[]
+  pos                PurchaseOrder[]
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  @@map("vendors")
+}
+
+model Rfq {
+  id          String      @id @default(uuid()) @db.Uuid
+  title       String
+  description String
+  deadline    DateTime
+  status      RfqStatus   @default(DRAFT)
+  createdById String      @db.Uuid
+  createdBy   User        @relation("ProcurementRfqs", fields: [createdById], references: [id], onDelete: Restrict)
+  quotations  Quotation[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("rfqs")
+}
+
+model Quotation {
+  id               String          @id @default(uuid()) @db.Uuid
+  rfqId            String          @db.Uuid
+  rfq              Rfq             @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  vendorId         String          @db.Uuid
+  vendor           Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  price            Decimal         @db.Decimal(12, 2)
+  deliveryTimeline String
+  comments         String?
+  status           QuotationStatus @default(SUBMITTED)
+  pos              PurchaseOrder[]
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@map("quotations")
+}
+
+model PurchaseOrder {
+  id          String    @id @default(uuid()) @db.Uuid
+  poNumber    String    @unique
+  quotationId String    @db.Uuid
+  quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Restrict)
+  vendorId    String    @db.Uuid
+  vendor      Vendor    @relation(fields: [vendorId], references: [id], onDelete: Restrict)
+  buyerId     String    @db.Uuid
+  buyer       User      @relation("ProcurementPos", fields: [buyerId], references: [id], onDelete: Restrict)
+  totalAmount Decimal   @db.Decimal(12, 2)
+  status      PoStatus  @default(DRAFT)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("purchase_orders")
+}

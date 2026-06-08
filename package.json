@@ -1,0 +1,49 @@
+{
+  "name": "@vendorbridge/backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:seed": "node prisma/seed.js"
+  },
+  "imports": {
+    "#config/*": "./src/config/*.js",
+    "#controllers/*": "./src/controllers/*.js",
+    "#services/*": "./src/services/*.js",
+    "#repositories/*": "./src/repositories/*.js",
+    "#routes/*": "./src/routes/*.js",
+    "#middlewares/*": "./src/middlewares/*.js",
+    "#validators/*": "./src/validators/*.js",
+    "#utils/*": "./src/utils/*.js",
+    "#helpers/*": "./src/helpers/*.js",
+    "#constants/*": "./src/constants/*.js",
+    "#modules/*": "./src/modules/*.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "morgan": "^1.10.0",
+    "express-rate-limit": "^7.2.0",
+    "cookie-parser": "^1.4.6",
+    "compression": "^1.7.4",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8",
+    "@prisma/client": "^5.14.0",
+    "@vendorbridge/shared": "*",
+    "@vendorbridge/constants": "*",
+    "@vendorbridge/validators": "*",
+    "@vendorbridge/types": "*"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.2",
+    "prisma": "^5.14.0"
+  }
+}

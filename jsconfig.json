@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "#config/*": ["src/config/*"],
+      "#controllers/*": ["src/controllers/*"],
+      "#services/*": ["src/services/*"],
+      "#repositories/*": ["src/repositories/*"],
+      "#routes/*": ["src/routes/*"],
+      "#middlewares/*": ["src/middlewares/*"],
+      "#validators/*": ["src/validators/*"],
+      "#utils/*": ["src/utils/*"],
+      "#helpers/*": ["src/helpers/*"],
+      "#constants/*": ["src/constants/*"],
+      "#modules/*": ["src/modules/*"]
+    }
+  },
+  "include": ["src/**/*"]
+}
