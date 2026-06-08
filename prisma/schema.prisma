@@ -1,5 +1,5 @@
 datasource db {
-  provider = "postgresql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
@@ -43,12 +43,12 @@ enum PoStatus {
 }
 
 model User {
-  id        String          @id @default(uuid()) @db.Uuid
+  id        String          @id @default(auto()) @map("_id") @db.ObjectId
   email     String          @unique
   password  String
   name      String
   role      Role            @default(SUPPLIER)
-  vendorId  String?         @db.Uuid
+  vendorId  String?         @db.ObjectId
   vendor    Vendor?         @relation(fields: [vendorId], references: [id], onDelete: SetNull)
   rfqs      Rfq[]           @relation("ProcurementRfqs")
   pos       PurchaseOrder[] @relation("ProcurementPos")
@@ -59,7 +59,7 @@ model User {
 }
 
 model Vendor {
-  id                 String          @id @default(uuid()) @db.Uuid
+  id                 String          @id @default(auto()) @map("_id") @db.ObjectId
   name               String
   email              String          @unique
   phone              String
@@ -76,12 +76,12 @@ model Vendor {
 }
 
 model Rfq {
-  id          String      @id @default(uuid()) @db.Uuid
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   description String
   deadline    DateTime
   status      RfqStatus   @default(DRAFT)
-  createdById String      @db.Uuid
+  createdById String      @db.ObjectId
   createdBy   User        @relation("ProcurementRfqs", fields: [createdById], references: [id], onDelete: Restrict)
   quotations  Quotation[]
   createdAt   DateTime    @default(now())
@@ -91,12 +91,12 @@ model Rfq {
 }
 
 model Quotation {
-  id               String          @id @default(uuid()) @db.Uuid
-  rfqId            String          @db.Uuid
+  id               String          @id @default(auto()) @map("_id") @db.ObjectId
+  rfqId            String          @db.ObjectId
   rfq              Rfq             @relation(fields: [rfqId], references: [id], onDelete: Cascade)
-  vendorId         String          @db.Uuid
+  vendorId         String          @db.ObjectId
   vendor           Vendor          @relation(fields: [vendorId], references: [id], onDelete: Cascade)
-  price            Decimal         @db.Decimal(12, 2)
+  price            Float
   deliveryTimeline String
   comments         String?
   status           QuotationStatus @default(SUBMITTED)
@@ -108,15 +108,15 @@ model Quotation {
 }
 
 model PurchaseOrder {
-  id          String    @id @default(uuid()) @db.Uuid
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   poNumber    String    @unique
-  quotationId String    @db.Uuid
+  quotationId String    @db.ObjectId
   quotation   Quotation @relation(fields: [quotationId], references: [id], onDelete: Restrict)
-  vendorId    String    @db.Uuid
+  vendorId    String    @db.ObjectId
   vendor      Vendor    @relation(fields: [vendorId], references: [id], onDelete: Restrict)
-  buyerId     String    @db.Uuid
+  buyerId     String    @db.ObjectId
   buyer       User      @relation("ProcurementPos", fields: [buyerId], references: [id], onDelete: Restrict)
-  totalAmount Decimal   @db.Decimal(12, 2)
+  totalAmount Float
   status      PoStatus  @default(DRAFT)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
